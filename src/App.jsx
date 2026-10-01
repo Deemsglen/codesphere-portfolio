@@ -568,7 +568,7 @@ function Reveal({ children, className = '', delay = 0 }) {
 }
 
 /* ==========================================================
-   HERO WELCOME — Welcome text ↔ Team photos
+   HERO WELCOME
 ========================================================== */
 
 function HeroWelcome() {
@@ -822,7 +822,7 @@ function About() {
 }
 
 /* ==========================================================
-   TEAM
+   TEAM — may tap-to-reveal sa mobile
 ========================================================== */
 
 function SocialButton({ icon, label, onClick }) {
@@ -833,16 +833,31 @@ function SocialButton({ icon, label, onClick }) {
   )
 }
 
-function MemberCard({ member, index, onOpen, spotlight, onSpotlight }) {
+function MemberCard({ member, index, onOpen, spotlight, onSpotlight, isTapped, onToggleTap }) {
   const dim = spotlight !== null && spotlight !== member.id
+  const isDesktop = useIsDesktop()
+
+  const handleImageClick = () => {
+    if (isDesktop) {
+      onOpen(member)
+    } else {
+      onToggleTap()
+    }
+  }
+
   return (
     <Reveal delay={index * 120}>
       <div className={`spotlight-wrap ${dim ? 'is-dimmed' : ''} ${spotlight === member.id ? 'is-spotlight' : ''}`}>
         <Tilt maxTilt={4} lift={5}>
-          <article className={`member-card member-${index + 1}`}>
+          <article className={`member-card member-${index + 1} ${isTapped ? 'is-tapped' : ''}`}>
             <div className="member-top">
               <div className="member-image-wrap">
-                <button type="button" className="member-image-button" onClick={() => onOpen(member)} aria-label={`Open ${member.displayName} profile`}>
+                <button
+                  type="button"
+                  className="member-image-button"
+                  onClick={handleImageClick}
+                  aria-label={isDesktop ? `Open ${member.displayName} profile` : `Show details for ${member.displayName}`}
+                >
                   <img src={member.image} alt={member.displayName} className="member-image" loading="lazy" />
                 </button>
               </div>
@@ -888,6 +903,8 @@ function MemberCard({ member, index, onOpen, spotlight, onSpotlight }) {
 
 function Team({ onOpenMember }) {
   const [spotlight, setSpotlight] = useState(null)
+  const [tappedId, setTappedId] = useState(null)
+
   return (
     <section id="team" className="section section-anchor">
       <div className="container">
@@ -895,7 +912,7 @@ function Team({ onOpenMember }) {
           <span className="section-label">OUR TEAM</span>
           <h2 className="section-heading compact heading-reveal">Meet the Members</h2>
           <p className="section-description compact-description">
-            Three individuals. Different strengths. Same goal. Tap the dot to spotlight a member.
+            Three individuals. Different strengths. Same goal. Tap a member to see their details.
           </p>
         </Reveal>
         <div className="team-grid">
@@ -907,6 +924,8 @@ function Team({ onOpenMember }) {
               onOpen={onOpenMember}
               spotlight={spotlight}
               onSpotlight={setSpotlight}
+              isTapped={tappedId === member.id}
+              onToggleTap={() => setTappedId(tappedId === member.id ? null : member.id)}
             />
           ))}
         </div>
@@ -916,10 +935,9 @@ function Team({ onOpenMember }) {
 }
 
 /* ==========================================================
-   PROJECTS — may image slideshow
+   PROJECTS
 ========================================================== */
 
-/* Fallback visual kung walang image */
 function SchoolPreview() {
   return (
     <div className="project-art school-art">
@@ -957,10 +975,6 @@ function ProjectVisual({ type }) {
   return <SchoolPreview />
 }
 
-/* ==========================================================
-   ProjectMedia — image slideshow (1 image = static, 2+ = slide)
-========================================================== */
-
 function ProjectMedia({ project }) {
   const images = project.images || []
   const [index, setIndex] = useState(0)
@@ -974,7 +988,6 @@ function ProjectMedia({ project }) {
     return () => window.clearInterval(id)
   }, [images.length, reduced])
 
-  // Walang images — fallback sa CSS art
   if (images.length === 0) {
     return <ProjectVisual type={project.imageType} />
   }
@@ -1093,7 +1106,6 @@ function ProjectPreviewModal({ project, onClose }) {
 function Projects() {
   const [filter, setFilter] = useState('All')
   const [preview, setPreview] = useState(null)
-
   const categories = ['All', 'Web Apps', 'UI/UX']
 
   const filteredProjects = useMemo(() => {
